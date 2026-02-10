@@ -1,0 +1,1 @@
+taxon,lfc_(Intercept),lfc_GroupTumor,se_(Intercept),se_GroupTumor,W_(Intercept),W_GroupTumor,p_(Intercept),p_GroupTumor,q_(Intercept),q_GroupTumor,diff_(Intercept),diff_GroupTumor,passed_ss_(Intercept),passed_ss_GroupTumor,diff_robust_(Intercept),diff_robust_GroupTumor,lfc,qval,significant,direction

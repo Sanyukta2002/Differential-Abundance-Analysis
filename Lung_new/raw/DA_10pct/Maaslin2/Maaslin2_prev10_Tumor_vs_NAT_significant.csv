@@ -1,0 +1,3 @@
+feature,metadata,value,coef,stderr,N,N.not.0,pval,qval,significant,direction
+Bacillus,Group,Tumor,-1.13458442962808,0.33531973372387,456,116,8.4265238538274e-4,0.0381022465434855,TRUE,NAT_enriched
+Devosia,Group,Tumor,-0.70989207055334,0.218543965274657,456,70,0.00133692093135037,0.0381022465434855,TRUE,NAT_enriched
