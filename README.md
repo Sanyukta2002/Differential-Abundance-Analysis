@@ -5,7 +5,7 @@
 # Differential Abundance Analysis of the Human Tumor Microbiome
 
 Benchmarking of four DA tools (DESeq2, ANCOM-BC2, ALDEx2, MaAsLin2) applied to 
-SMURF-normalized 16S abundance data from Nejman et al. (*Science*, 2020), comparing 
+SMURF-normalized 16S abundance data from Nejman et al. (*Science*, 2020) (https://doi.org/10.1126/science.aay9189), comparing 
 normal adjacent tissue (NAT) vs. tumor across three cancer types using paired patient 
 samples. Data from Table S2 was rounded to integers and analyzed at the genus level 
 across three data conditions (raw, mbImpute, BMDD) with 5% and 10% prevalence filters.
