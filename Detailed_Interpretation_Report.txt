@@ -507,202 +507,6 @@ size in microbiome studies. The ovary dataset's 24 samples are well
 below the recommended minimum for most DA tools (typically n > 50-100
 for adequate power; Weiss et al. 2017).
 
-================================================================================
-4. PHASE 2 RESULTS: MACHINE LEARNING CLASSIFICATION
-================================================================================
-
-The second phase attempted to classify tumor samples by cancer type
-(breast, lung, melanoma, ovary, pancreas) using their microbiome
-profiles. The total dataset comprised 901 tumor samples:
-  - Breast: 338 (37.5%)
-  - Lung: 243 (27.0%)
-  - Melanoma: 197 (21.9%)
-  - Ovary: 56 (6.2%)
-  - Pancreas: 67 (7.4%)
-
-4.1 Model Results Summary
----------------------------
-
-Metric                    | RF (baseline) | RF (SMOTE) | XGBoost (SMOTE)
---------------------------|---------------|------------|----------------
-Mean Accuracy (5-fold CV) |  0.628        |  0.613     |  0.592
-Std Dev                   |  +/- 0.042    |  +/- 0.058|  +/- 0.036
-Breast F1                 |  0.72         |  0.73      |  0.71
-Lung F1                   |  0.53         |  0.53      |  0.49
-Melanoma F1               |  0.70         |  0.64      |  0.66
-Ovary F1                  |  0.00         |  0.09      |  0.09
-Pancreas F1               |  0.54         |  0.53      |  0.48
-
-4.2 Interpretation of Classification Performance
----------------------------------------------------
-
-4.2.1 Overall Accuracy Context:
-
-The accuracies of 59-63% are modest but meaningful in context. Random
-chance classification across 5 classes would yield ~20% accuracy (or
-~37.5% if always predicting the majority class). The achieved accuracies
-represent a substantial improvement over random chance, suggesting that
-microbial community composition does carry discriminatory information
-for cancer type classification.
-
-For comparison, Poore et al. (2020, Nature) achieved higher accuracies
-(~65-80%) for cancer type discrimination using microbiome data, but their
-study used a much larger dataset (>18,000 samples from TCGA), more
-sophisticated feature engineering, and a different analytical pipeline.
-Our lower accuracy is expected given the smaller sample size and simpler
-approach.
-
-4.2.2 Per-Class Performance Analysis:
-
-BREAST (Best classified: F1 = 0.71-0.73):
-Breast tumors were the most accurately classified, with precision of
-0.64-0.75 and recall of 0.71-0.82. This is consistent with Nejman et
-al.'s finding that breast tumors have the most diverse and distinctive
-microbiome, providing more discriminatory features. The confusion
-matrices show breast samples were primarily confused with lung (52-66
-misclassifications), which may reflect shared environmental microbial
-exposures or similar tissue characteristics.
-
-MELANOMA (Second best: F1 = 0.64-0.70):
-Melanoma showed good classification, with precision of 0.59-0.77 and
-recall of 0.64-0.69. The baseline RF (without SMOTE) achieved the
-highest melanoma F1 of 0.70 with precision of 0.77. Melanoma's
-distinctive skin-associated microbiome likely provides discriminatory
-features not shared with internal organ tumors.
-
-LUNG (Moderate: F1 = 0.49-0.53):
-Lung classification was moderate, with substantial confusion with breast
-(43-88 misclassifications) and melanoma (18-45). The lung microbiome
-may share features with both breast (anatomical proximity, mucosal
-surfaces) and melanoma (environmental exposure), reducing discriminatory
-power.
-
-PANCREAS (Moderate: F1 = 0.48-0.54):
-Despite having only 67 samples, pancreas showed moderate classification
-with recall of 0.40-0.48. SMOTE appeared to improve pancreas recall
-compared to the baseline RF.
-
-OVARY (Poor: F1 = 0.00-0.09):
-Ovary classification was essentially failed across all models. The
-baseline RF achieved 0 precision, 0 recall, and 0 F1 for ovary. Even
-with SMOTE, the best F1 was 0.09 (RF improved) and 0.09 (XGBoost).
-The confusion matrices reveal the problem clearly:
-  - Baseline RF: All 56 ovary samples were misclassified (25 as breast,
-    22 as lung, 9 as melanoma)
-  - RF with SMOTE: Only 3 of 56 correctly classified (17 as breast,
-    19 as lung, 16 as melanoma, 1 as pancreas)
-  - XGBoost with SMOTE: Only 4 of 56 correctly classified
-
-This failure has multiple contributing factors:
-  (a) Extreme class imbalance: Ovary (56 samples, 6.2%) vs. breast
-      (338, 37.5%). Even with SMOTE, the synthetic samples may not
-      capture the true distributional properties of the ovary microbiome.
-  (b) Small original sample size: With only 56 samples in 5-fold CV,
-      each fold has only ~11 ovary test samples, providing insufficient
-      data for the model to learn ovary-specific patterns.
-  (c) Possible biological overlap: The ovary microbiome may genuinely
-      lack distinctive features that separate it from other cancer types,
-      or the low bacterial biomass in ovarian tumors may result in a
-      microbiome profile dominated by noise rather than signal.
-
-4.2.3 Effect of SMOTE:
-
-Comparing baseline RF (no SMOTE) to RF with SMOTE:
-  - SMOTE slightly reduced overall accuracy (0.628 -> 0.613)
-  - SMOTE improved ovary recall from 0.00 to 0.05 and F1 from 0.00 to
-    0.09 -- still very poor, but no longer zero
-  - SMOTE improved pancreas recall from 0.40 to 0.48
-  - SMOTE reduced melanoma performance (F1 from 0.70 to 0.64)
-
-This trade-off is characteristic of SMOTE: by oversampling minority
-classes, the model sacrifices majority class performance for minority
-class gains. However, the gains for ovary were minimal, suggesting that
-SMOTE cannot overcome the fundamental lack of discriminatory signal in
-the ovary microbiome data. Chawla et al. (2002) originally demonstrated
-SMOTE's limitations with very small minority classes and high-dimensional
-data, both of which apply here.
-
-4.2.4 RF vs. XGBoost:
-
-Random Forest slightly outperformed XGBoost across all metrics:
-  - Mean accuracy: RF 0.613 vs. XGBoost 0.592
-  - Weighted F1: RF 0.60 vs. XGBoost 0.59
-  - Per-class: RF matched or exceeded XGBoost in all categories
-
-This may reflect Random Forest's better handling of noise in
-high-dimensional, low-signal microbiome data, where individual trees'
-bagging approach provides more robust variance reduction. XGBoost's
-sequential boosting may overfit to noise in this setting.
-
-4.3 Feature Importance Analysis
----------------------------------
-
-4.3.1 Top 10 Features by Model:
-
-Rank | RF (baseline)        | RF (SMOTE)       | XGBoost (SMOTE)
------|---------------------|------------------|------------------
-  1  | Pseudomonas (0.024) | Sphingomonas     | Klebsiella
-  2  | Corynebacterium     | Enterobacter     | Enterococcus
-  3  | Streptococcus       | Klebsiella       | Tepidimonas
-  4  | Sphingomonas        | Pseudomonas      | Diaphorobacter
-  5  | Citrobacter         | Corynebacterium  | Enterobacter
-  6  | Staphylococcus      | Streptococcus    | Lactococcus
-  7  | Escherichia/Shigella| Staphylococcus   | Kaistobacter
-  8  | Enterobacter        | Escherichia/Shig.| Rothia
-  9  | Klebsiella          | Rothia           | Unknown genus116
- 10  | Acinetobacter       | Paracoccus       | Caulobacter
-
-4.3.2 Interpretation of Feature Importances:
-
-CONSISTENT TOP FEATURES ACROSS MODELS:
-Several genera appear in the top 10 across multiple models:
-  - Klebsiella, Enterobacter, Pseudomonas, Staphylococcus,
-    Escherichia/Shigella, and Corynebacterium
-
-These are all common human-associated or environmental bacteria. Their
-importance for classification does not necessarily indicate a causal
-role in cancer but rather that their abundance patterns differ across
-tumor types in a way the classifier can exploit.
-
-CONTAMINATION CONSIDERATIONS:
-Several top features (Pseudomonas, Escherichia/Shigella, Klebsiella,
-Enterobacter, Acinetobacter) are known potential contaminants in
-low-biomass sequencing studies (Salter et al. 2014; Eisenhofer et al.
-2019). While Nejman et al. (2020) implemented contamination controls,
-the prominence of these genera in classification features warrants
-caution. If some of these signals derive partly from contamination
-patterns that differ by tissue type or processing batch, the
-classifier may be partially learning technical rather than biological
-variation.
-
-BIOLOGICALLY PLAUSIBLE FEATURES:
-  - Corynebacterium: A skin-associated genus whose differential
-    abundance across tumor types is biologically plausible (skin tumors
-    like melanoma would have different levels than internal tumors).
-  - Streptococcus: An oral/respiratory bacterium whose differential
-    abundance between lung and other tumor types is expected.
-  - Staphylococcus: Consistently identified as tumor-enriched in DA
-    analysis and present in top classification features, providing
-    convergent evidence for its relevance.
-  - Rothia: An oral commensal found in top features of SMOTE models;
-    Rothia has been associated with lung cancer in some studies.
-
-4.3.3 Feature Importance Distribution:
-
-The feature importance values are notably flat. In the baseline RF, the
-top feature (Pseudomonas) has importance of 0.024, and importances
-decrease gradually with many genera contributing small amounts. This
-flat distribution indicates that no single genus is strongly
-discriminatory; rather, classification relies on the collective pattern
-of many genera with weak individual signals. This is consistent with
-the concept that the tumor microbiome is characterized by community-level
-shifts rather than the dominance or absence of individual taxa.
-
-The total number of features in the baseline RF was >1,600 genera, of
-which many had zero or near-zero importance. The improved models used
-78 genera after low-variance filtering, which is a reasonable reduction
-that removes uninformative features while retaining enough for pattern
-detection.
 
 ================================================================================
 5. DISCUSSION
@@ -789,12 +593,6 @@ factor, while ALDEx2's standard two-group tests do not. It is unclear
 from the provided data whether the paired structure was utilized where
 possible, which could affect sensitivity and specificity.
 
-5.3.6 Classification Limitations:
-The classification task used only genus-level abundance data without
-additional clinical or molecular features. Integration of multi-omic
-data (gene expression, mutations, methylation) with microbiome data
-could potentially improve classification performance, as demonstrated
-by Poore et al. (2020).
 
 5.4 Comparison with the Literature
 -------------------------------------
@@ -812,9 +610,7 @@ tumor microbiome literature:
     (2017).
   - The poor concordance between DA tools is consistent with Nearing
     et al. (2022) and Wallen (2021).
-  - The modest classification accuracy (~60-63%) is within the expected
-    range for microbiome-based cancer classification with limited
-    sample sizes.
+  
 
 ================================================================================
 6. CONCLUSIONS
@@ -836,19 +632,9 @@ applied to the human tumor microbiome. The key conclusions are:
    revealing signal, sometimes producing no change, and potentially
    introducing artifacts. Findings unique to imputed data should be
    treated as hypothesis-generating.
-
-4. Machine learning classification of tumor types from microbiome data
-   achieves modest but above-chance accuracy (~60-63%), with breast and
-   melanoma being the most classifiable and ovary being essentially
-   unclassifiable with the available data.
-
-5. Ovary data (n=24) is severely underpowered for both DA analysis and
+4. Ovary data (n=24) is severely underpowered for both DA analysis and
    machine learning classification, yielding unreliable results.
 
-6. Feature importance analysis identifies both biologically plausible
-   genera (Staphylococcus, Corynebacterium, Streptococcus) and potential
-   contaminants (Pseudomonas, Klebsiella) as top discriminators,
-   warranting cautious interpretation.
 
 ================================================================================
 7. REFERENCES
