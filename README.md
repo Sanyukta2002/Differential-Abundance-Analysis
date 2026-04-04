@@ -12,8 +12,6 @@ across three data conditions (raw, mbImpute, BMDD) with 5% and 10% prevalence fi
 
 ---
 
-![Analysis Workflow](workflow.png)
-
 *Figure 1. Analysis pipeline: three cancer types × three data conditions × two 
 prevalence filters × four DA tools. Significance threshold: q < 0.05 
 (Benjamini-Hochberg). Paired patient design accounted for in all tools.*
