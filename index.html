@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Differential Abundance Analysis, Human Tumor Microbiome</title>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,300;0,400;0,600;1,400&family=Source+Sans+3:wght@300;400;600&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --text:       #1a1a1a;
+    --text-light: #555;
+    --text-muted: #888;
+    --accent:     #2563a8;
+    --accent-light: #e8f0f8;
+    --border:     #e0e0e0;
+    --bg:         #ffffff;
+    --bg-alt:     #f8f8f8;
+    --code-bg:    #f4f4f4;
+    --tumor:      #b91c1c;
+    --nat:        #1d4ed8;
+    --warn-bg:    #fffbeb;
+    --warn-border:#d97706;
+    --note-bg:    #f0f7ff;
+    --note-border:#2563a8;
+    --serif: 'Source Serif 4', Georgia, serif;
+    --sans:  'Source Sans 3', system-ui, sans-serif;
+    --mono:  'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--serif);
+    font-size: 16px;
+    line-height: 1.8;
+  }
+  .topbar {
+    border-bottom: 1px solid var(--border);
+    padding: .65rem 0;
+    background: var(--bg);
+    position: sticky;
+    top: 0;
+    z-index: 50;
+  }
+  .topbar-inner {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 2rem;
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+  }
+  .site-title {
+    font-family: var(--sans);
+    font-weight: 600;
+    font-size: 15px;
+    color: var(--accent);
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .topbar nav { display: flex; flex-wrap: wrap; }
+  .topbar nav a {
+    font-family: var(--sans);
+    font-size: 13.5px;
+    color: var(--text-light);
+    text-decoration: none;
+    padding: .2rem .8rem;
+    border-radius: 3px;
+    transition: color .15s, background .15s;
+  }
+  .topbar nav a:hover { color: var(--accent); background: var(--accent-light); }
+  .page {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 2rem;
+    display: grid;
+    grid-template-columns: 1fr 210px;
+    gap: 3.5rem;
+    align-items: start;
+  }
+  .sidebar {
+    position: sticky;
+    top: 52px;
+    padding: 2.5rem 0 2rem;
+    font-family: var(--sans);
+  }
+  .toc-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: .75rem;
+  }
+  .toc-list { list-style: none; border-left: 2px solid var(--border); }
+  .toc-list li a {
+    display: block;
+    font-size: 13px;
+    color: var(--text-light);
+    text-decoration: none;
+    padding: .25rem 0 .25rem .85rem;
+    border-left: 2px solid transparent;
+    margin-left: -2px;
+    transition: color .15s, border-color .15s;
+    line-height: 1.4;
+  }
+  .toc-list li a:hover { color: var(--accent); border-left-color: var(--accent); }
+  main { padding: 2.5rem 0 4rem; min-width: 0; }
+  .page-title {
+    font-family: var(--serif);
+    font-size: 2rem;
+    font-weight: 600;
+    line-height: 1.25;
+    margin-bottom: .75rem;
+  }
+  .page-subtitle {
+    font-family: var(--sans);
+    font-size: 14px;
+    color: var(--text-muted);
+    margin-bottom: 1.75rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: .5rem;
+    align-items: center;
+  }
+  .badge {
+    font-size: 12px;
+    padding: .15rem .55rem;
+    border-radius: 3px;
+    background: var(--accent-light);
+    color: var(--accent);
+    font-family: var(--sans);
+    font-weight: 600;
+  }
+  .intro-text {
+    font-size: 15.5px;
+    color: var(--text-light);
+    margin-bottom: 2rem;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid var(--border);
+  }
+  h2 {
+    font-family: var(--serif);
+    font-size: 1.45rem;
+    font-weight: 600;
+    color: var(--text);
+    margin: 2.75rem 0 .6rem;
+    padding-top: .5rem;
+  }
+  h3 {
+    font-family: var(--sans);
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text);
+    margin: 1.75rem 0 .4rem;
+  }
+  p { margin-bottom: 1rem; color: var(--text); font-size: 15.5px; }
+  p:last-child { margin-bottom: 0; }
+  a { color: var(--accent); }
+  a:hover { text-decoration: underline; }
+  strong { font-weight: 600; }
+  code {
+    font-family: var(--mono);
+    font-size: 13px;
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    padding: .1em .35em;
+    border-radius: 3px;
+  }
+  .callout {
+    border-left: 4px solid var(--note-border);
+    background: var(--note-bg);
+    padding: .9rem 1.1rem;
+    margin: 1.5rem 0;
+    border-radius: 0 4px 4px 0;
+  }
+  .callout.warn { border-left-color: var(--warn-border); background: var(--warn-bg); }
+  .callout-title {
+    font-family: var(--sans);
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    color: var(--note-border);
+    margin-bottom: .4rem;
+  }
+  .callout.warn .callout-title { color: var(--warn-border); }
+  .callout p { font-size: 14.5px; margin: 0; }
+  .stat-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: .75rem;
+    margin: 1.25rem 0 1.5rem;
+  }
+  .stat-card {
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: .9rem 1rem .75rem;
+    background: var(--bg-alt);
+  }
+  .stat-num {
+    font-family: var(--sans);
+    font-size: 1.6rem;
+    font-weight: 600;
+    color: var(--accent);
+    line-height: 1;
+    margin-bottom: .2rem;
+  }
+  .stat-label { font-family: var(--sans); font-size: 12px; color: var(--text-muted); }
+  .pipeline { margin: 1.25rem 0; border: 1px solid var(--border); border-radius: 4px; overflow: hidden; }
+  .pipeline-step {
+    display: flex;
+    gap: 1rem;
+    padding: .75rem 1.1rem;
+    border-bottom: 1px solid var(--border);
+    align-items: flex-start;
+    background: var(--bg);
+  }
+  .pipeline-step:last-child { border-bottom: none; }
+  .pipeline-step:not(:last-child)::after {
+    content: "↓";
+    position: absolute;
+    left: 50%;
+    bottom: -14px;
+    transform: translateX(-50%);
+    font-family: var(--sans);
+    font-size: 16px;
+    color: var(--text-muted);
+    background: var(--bg);
+    padding: 0 .2rem;
+  }
+  .pipeline-step:nth-child(odd) { background: var(--bg-alt); }
+  .pipeline-step { position: relative; }
+  .step-n {
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--accent);
+    background: var(--accent-light);
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: .15rem;
+  }
+  .step-body { font-family: var(--sans); font-size: 14px; }
+  .step-title { font-weight: 600; color: var(--text); }
+  .step-desc { color: var(--text-light); margin-top: .1rem; }
+  .tool-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: var(--sans);
+    font-size: 14px;
+    margin: 1.25rem 0;
+  }
+  .tool-table thead tr { background: var(--bg-alt); border-bottom: 2px solid var(--border); }
+  .tool-table th { padding: .6rem .9rem; text-align: left; font-weight: 600; font-size: 13px; }
+  .tool-table td {
+    padding: .65rem .9rem;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+    line-height: 1.5;
+  }
+  .tool-table tr:last-child td { border-bottom: none; }
+  .tool-name-cell { font-weight: 600; white-space: nowrap; }
+  .code-block {
+    margin: 1.25rem 0;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .code-header {
+    background: var(--bg-alt);
+    border-bottom: 1px solid var(--border);
+    padding: .45rem 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .code-label { font-family: var(--sans); font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: .06em; }
+  .code-note  { font-family: var(--sans); font-size: 12px; color: var(--text-muted); }
+  pre {
+    background: var(--code-bg);
+    padding: 1rem 1.1rem;
+    overflow-x: auto;
+    font-family: var(--mono);
+    font-size: 13px;
+    line-height: 1.65;
+    color: var(--text);
+  }
+  .cm { color: #888; font-style: italic; }
+  .kw { color: #0550ae; font-weight: 500; }
+  .fn { color: #953800; }
+  .st { color: #0a3069; }
+  .nm { color: #0550ae; }
+  .cancer-section { margin: 1.5rem 0; }
+  .cancer-header {
+    font-family: var(--sans);
+    font-size: 14px;
+    font-weight: 600;
+    padding: .5rem .9rem;
+    background: var(--bg-alt);
+    border: 1px solid var(--border);
+    border-bottom: none;
+    border-radius: 4px 4px 0 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .cancer-n { font-weight: 400; color: var(--text-muted); font-size: 13px; }
+  .results-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: var(--sans);
+    font-size: 13.5px;
+    border: 1px solid var(--border);
+    border-radius: 0 0 4px 4px;
+    overflow: hidden;
+  }
+  .results-table thead tr { background: var(--bg); border-bottom: 1px solid var(--border); }
+  .results-table th {
+    padding: .5rem .8rem;
+    text-align: left;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    white-space: nowrap;
+  }
+  .results-table td { padding: .5rem .8rem; border-bottom: 1px solid #f0f0f0; vertical-align: middle; }
+  .results-table tr:last-child td { border-bottom: none; }
+  .results-table tr:hover td { background: #fafafa; }
+  .dir-tumor {
+    font-size: 12px; font-weight: 600; color: var(--tumor);
+    background: #fef2f2; border: 1px solid #fecaca;
+    padding: .15rem .5rem; border-radius: 3px; white-space: nowrap; display: inline-block;
+  }
+  .dir-nat {
+    font-size: 12px; font-weight: 600; color: var(--nat);
+    background: #eff6ff; border: 1px solid #bfdbfe;
+    padding: .15rem .5rem; border-radius: 3px; white-space: nowrap; display: inline-block;
+  }
+  .chk { color: #16a34a; font-size: 14px; }
+  .dsh { color: #ccc; font-size: 14px; }
+  .genus-bold { font-weight: 600; }
+  .consensus-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: var(--sans);
+    font-size: 14px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+    margin: 1.25rem 0;
+  }
+  .consensus-table thead tr { background: var(--bg-alt); border-bottom: 2px solid var(--border); }
+  .consensus-table th { padding: .6rem .9rem; text-align: left; font-weight: 600; font-size: 13px; }
+  .consensus-table td { padding: .6rem .9rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  .consensus-table tr:last-child td { border-bottom: none; }
+  .consensus-table tr:hover td { background: #fafafa; }
+  .tools-cell { font-size: 13px; color: var(--text-light); }
+  .references { font-family: var(--sans); font-size: 14px; color: var(--text-light); margin-top: 1rem; }
+  .references p { font-size: 14px; padding: .4rem 0; border-bottom: 1px solid var(--border); }
+  .references p:last-child { border-bottom: none; }
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 1.5rem 0;
+    font-family: var(--sans);
+    font-size: 13px;
+    color: var(--text-muted);
+    text-align: center;
+  }
+  footer a { color: var(--accent); }
+  @media (max-width: 768px) {
+    .page { grid-template-columns: 1fr; gap: 0; }
+    .sidebar { display: none; }
+    .stat-row { grid-template-columns: repeat(2, 1fr); }
+    .page { padding: 0 1rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <a class="site-title" href="#">DA | Tumor Microbiome</a>
+    <nav>
+      <a href="#data">Data</a>
+      <a href="#methods">Methods</a>
+      <a href="#code">Code</a>
+      <a href="#results">Results</a>
+      <a href="#discussion">Discussion</a>
+      <a href="https://github.com/Sanyukta2002/Differential-Abundance-Analysis" target="_blank">GitHub ↗</a>
+    </nav>
+  </div>
+</div>
+
+<div class="page">
+<main>
+
+  <h1 class="page-title">Differential Abundance Analysis of the Human Tumor Microbiome</h1>
+  <div class="page-subtitle">
+    <span>2025</span><span>|</span>
+    <span class="badge">DESeq2</span>
+    <span class="badge">ALDEx2</span>
+    <span class="badge">ANCOM-BC2</span>
+    <span class="badge">MaAsLin2</span>
+  </div>
+  <p class="intro-text">
+    Benchmarking of four differential abundance tools applied to SMURF-normalised 16S abundance data from
+    <a href="https://doi.org/10.1126/science.aay9189" target="_blank">Nejman et al. (Science, 2020)</a>,
+    comparing normal adjacent tissue (NAT) vs. tumour across three cancer types using paired patient samples.
+    Data from Table S2 were rounded to integers and analysed at genus level across three data conditions
+    (raw, mbImpute, BMDD) with 5% and 10% prevalence filters.
+  </p>
+
+  <!-- 1. DATA -->
+  <h2 id="data">1 &nbsp;Data</h2>
+
+  <h3>Source and study context</h3>
+  <p>
+    The data originate from <strong>Nejman et al. (Science, 2020)</strong>, a comprehensive characterisation
+    of the intratumoral microbiome across 1,526 tumour samples and normal adjacent tissues from seven cancer
+    types. The original study demonstrated that each tumour type harbours a distinct microbial community and
+    that breast tumours have the richest and most diverse microbiome. From this dataset, three cancer types
+    were selected: breast, lung, and ovary, the only types with both NAT and tumour samples from the same patients.
+  </p>
+
+  <div class="stat-row">
+    <div class="stat-card"><div class="stat-num">308</div><div class="stat-label">Breast samples</div></div>
+    <div class="stat-card"><div class="stat-num">456</div><div class="stat-label">Lung samples</div></div>
+    <div class="stat-card"><div class="stat-num">24</div><div class="stat-label">Ovary samples</div></div>
+    <div class="stat-card"><div class="stat-num">72</div><div class="stat-label">Analysis conditions</div></div>
+  </div>
+
+  <h3>Paired patient design</h3>
+  <p>
+    Each sample comes from a <strong>paired patient</strong>; the same individual contributed both a NAT sample
+    and a tumour sample. Only patients with both sample types were retained; unpaired patients were excluded.
+    This within-patient design controls for inter-individual variation in baseline microbiome composition.
+    The paired structure was incorporated explicitly into all four tools.
+  </p>
+
+  <div class="callout">
+    <div class="callout-title">NAT vs. Tumour</div>
+    <p>
+      <strong>NAT (Normal Adjacent Tissue)</strong> is tissue sampled from the region immediately surrounding
+      the tumour in the same patient, not from a healthy individual. It is the within-patient reference
+      throughout this analysis. A genus labelled <em>Tumour-enriched</em> is more abundant in tumour relative
+      to that same patient's NAT; <em>NAT-enriched</em> means the reverse.
+    </p>
+  </div>
+
+  <h3>Data preparation</h3>
+  <p>
+    Abundance data were extracted from Supplementary Table S2 of Nejman et al., which contains SMURF-normalised
+    read counts. SMURF (Short MUltiple Regions Framework) is a multiplexed 5-amplicon 16S sequencing method
+    developed by the original authors to improve resolution from low-biomass formalin-fixed paraffin-embedded
+    samples. Values were <strong>rounded to the nearest integer</strong> to satisfy the integer-count
+    requirements of count-based DA tools. Taxonomy was aggregated to <strong>genus level</strong> for all
+    analyses. 16S rRNA sequencing cannot reliably discriminate species within the same genus in low-biomass
+    samples, and genus-level aggregation produces more stable count distributions for modelling.
+  </p>
+
+  <div class="callout warn">
+    <div class="callout-title">Note</div>
+    <p>
+      The input data are SMURF-normalised, not raw sequencing counts. DESeq2 and MaAsLin2 assume raw integer
+      counts and apply their own normalisation internally; running them on pre-normalised data violates this
+      assumption and likely inflates false positive rates, particularly for DESeq2. Results from
+      compositionally-aware tools (ALDEx2, ANCOM-BC2) are more appropriate for this data type. Findings
+      consistent across multiple tools carry the most confidence.
+    </p>
+  </div>
+
+  <h3>Analysis pipeline</h3>
+  <div class="pipeline">
+    <div class="pipeline-step"><div class="step-n">1</div><div class="step-body"><div class="step-title">Source data extraction</div><div class="step-desc">Genus-level integer counts from Table S2; paired clinical metadata (Group: NAT / Tumour; Patient_ID)</div></div></div>
+    <div class="pipeline-step"><div class="step-n">2</div><div class="step-body"><div class="step-title">Paired patient restriction</div><div class="step-desc">Retain only patients with both NAT and Tumour samples; align count matrix columns to metadata rows</div></div></div>
+    <div class="pipeline-step"><div class="step-n">3</div><div class="step-body"><div class="step-title">Imputation (optional)</div><div class="step-desc"><strong>mbImpute</strong> (frequentist regression) and <strong>BMDD</strong> (Bayesian) applied independently to impute probable sampling zeros; raw data also analysed without imputation</div></div></div>
+    <div class="pipeline-step"><div class="step-n">4</div><div class="step-body"><div class="step-title">Prevalence filtering</div><div class="step-desc">External filter before all tools: <strong>5%</strong> and <strong>10%</strong> thresholds tested separately; internal filters within all tools disabled</div></div></div>
+    <div class="pipeline-step"><div class="step-n">5</div><div class="step-body"><div class="step-title">DA analysis: four tools in parallel</div><div class="step-desc">DESeq2, ALDEx2, ANCOM-BC2, MaAsLin2 run independently; significance threshold q &lt; 0.05 (Benjamini-Hochberg)</div></div></div>
+    <div class="pipeline-step"><div class="step-n">6</div><div class="step-body"><div class="step-title">Cross-tool comparison</div><div class="step-desc">Genera significant in more than one tool treated as consensus findings; single-tool findings noted separately</div></div></div>
+  </div>
+
+  <!-- 2. METHODS -->
+  <h2 id="methods">2 &nbsp;Methods</h2>
+
+  <p>
+    A key motivation for using multiple tools is the well-documented discordance between DA methods.
+    <strong>Nearing et al. (Nature Communications, 2022)</strong> benchmarked DA methods across 38 microbiome
+    datasets and found average inter-tool overlap as low as 20–30%, with DESeq2 consistently the most liberal
+    and ALDEx2 / ANCOM-BC among the most conservative. This analysis applies the same multi-tool framework to
+    observe how discordance manifests in tumour microbiome data specifically.
+  </p>
+
+  <h3>DA tools</h3>
+  <table class="tool-table">
+    <thead><tr><th>Tool</th><th>Statistical framework</th><th>Paired design</th><th>Sensitivity</th></tr></thead>
+    <tbody>
+      <tr><td class="tool-name-cell">DESeq2</td><td>Negative binomial GLM; empirical Bayes dispersion shrinkage; median-of-ratios normalisation; LFC shrinkage via apeglm</td><td><code>~ Patient_ID + Group</code></td><td>Most liberal</td></tr>
+      <tr><td class="tool-name-cell">ALDEx2</td><td>Compositionally aware; CLR transformation over Monte Carlo Dirichlet instances; Welch's t-test + Wilcoxon rank-sum test; effect size = between-group / within-group CLR difference</td><td><code>paired.test = TRUE</code></td><td>Most conservative</td></tr>
+      <tr><td class="tool-name-cell">ANCOM-BC2</td><td>Corrects for unknown sampling fraction bias; standard (<code>diff</code>) and robust sensitivity (<code>diff_robust</code>) flags; random intercept for pairing</td><td><code>(1 | Patient_ID)</code></td><td>Conservative</td></tr>
+      <tr><td class="tool-name-cell">MaAsLin2</td><td>Per-taxon GLM; TSS normalisation + log transform; BH correction; positive coefficient = Tumour-enriched</td><td><code>random_effects = Patient_ID</code></td><td>Moderate</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Significance threshold</h3>
+  <p>
+    All tools applied a uniform threshold of <strong>q &lt; 0.05</strong> (Benjamini-Hochberg FDR). For ALDEx2,
+    significance was called when the minimum of the Welch BH (<code>we.eBH</code>) and Wilcoxon BH
+    (<code>wi.eBH</code>) q-values fell below 0.05. For ANCOM-BC2, both standard and robust flags were
+    recorded; all findings in this analysis were standard-significant but not robust-significant
+    (see <a href="#discussion">Discussion</a>).
+  </p>
+
+  <h3>Imputation</h3>
+  <p>
+    <strong>mbImpute</strong> uses a regularised regression framework to predict whether zeros are sampling
+    artefacts and imputes those values. <strong>BMDD</strong> uses a Bayesian posterior framework for the same
+    purpose. BMDD requires sufficient sample size for stable estimation and could not be applied to the ovary
+    dataset (n = 24). Each imputed dataset was analysed in parallel with raw data to assess whether imputation
+    changed the DA results.
+  </p>
+
+  <!-- 3. CODE -->
+  <h2 id="code">3 &nbsp;Code</h2>
+
+  <p>
+    All scripts follow the same structure across cancer types and data conditions; only input file paths and
+    the prevalence cutoff differ between runs. Internal filters within each tool are disabled; filtering is
+    applied externally and uniformly before all tools.
+  </p>
+
+  <h3>Setup, data loading, and paired patient restriction</h3>
+  <div class="code-block">
+    <div class="code-header"><span class="code-label">R</span><span class="code-note">shared across all scripts</span></div>
+<pre><span class="cm"># Parameters</span>
+alpha    <span class="nm">&lt;-</span> <span class="nm">0.05</span>    <span class="cm"># FDR threshold (q &lt; 0.05)</span>
+prev_cut <span class="nm">&lt;-</span> <span class="nm">0.05</span>    <span class="cm"># 5% prevalence (set to 0.10 for 10% filter)</span>
+
+<span class="cm"># Load abundance matrix (taxa x samples)</span>
+otu <span class="nm">&lt;-</span> <span class="fn">read.csv</span>(<span class="st">"abundanceint.csv"</span>, check.names <span class="nm">=</span> FALSE)
+<span class="fn">rownames</span>(otu) <span class="nm">&lt;-</span> otu[["genus"]]
+otu[["genus"]] <span class="nm">&lt;-</span> NULL
+counts_mat <span class="nm">&lt;-</span> <span class="fn">as.matrix</span>(otu)
+
+<span class="cm"># Load clinical metadata</span>
+meta <span class="nm">&lt;-</span> <span class="fn">read.csv</span>(<span class="st">"clinical.csv"</span>, check.names <span class="nm">=</span> FALSE)
+
+<span class="cm"># Restrict to paired patients (both NAT and Tumour)</span>
+tab_pair   <span class="nm">&lt;-</span> <span class="fn">table</span>(meta[["Patient_ID"]], meta[["Group"]])
+paired_ids <span class="nm">&lt;-</span> <span class="fn">names</span>(<span class="fn">which</span>(<span class="fn">rowSums</span>(tab_pair <span class="nm">&gt;</span> <span class="nm">0</span>) <span class="nm">==</span> <span class="nm">2</span>))
+
+meta_paired   <span class="nm">&lt;-</span> meta[meta[["Patient_ID"]] <span class="nm">%in%</span> paired_ids, ]
+counts_paired <span class="nm">&lt;-</span> counts_mat[, meta_paired[["Sample_ID"]], drop <span class="nm">=</span> FALSE]
+
+<span class="cm"># External prevalence filter (applied before all tools)</span>
+min_nonzero <span class="nm">&lt;-</span> <span class="fn">ceiling</span>(prev_cut <span class="nm">*</span> <span class="fn">ncol</span>(counts_paired))
+keep_taxa   <span class="nm">&lt;-</span> <span class="fn">rowSums</span>(counts_paired <span class="nm">&gt;</span> <span class="nm">0</span>) <span class="nm">&gt;=</span> min_nonzero
+counts_filt <span class="nm">&lt;-</span> counts_paired[keep_taxa, , drop <span class="nm">=</span> FALSE]</pre>
+  </div>
+
+  <h3>DESeq2</h3>
+  <div class="code-block">
+    <div class="code-header"><span class="code-label">R</span><span class="code-note">design: ~ Patient_ID + Group</span></div>
+<pre><span class="cm">## Paired blocking: Patient_ID absorbs between-patient variance</span>
+dds <span class="nm">&lt;-</span> <span class="fn">DESeqDataSetFromMatrix</span>(
+  countData <span class="nm">=</span> <span class="fn">round</span>(counts_filt),    <span class="cm"># integer counts required</span>
+  colData   <span class="nm">=</span> meta_paired,
+  design    <span class="nm">=</span> <span class="nm">~</span> Patient_ID <span class="nm">+</span> Group
+)
+dds <span class="nm">&lt;-</span> <span class="fn">estimateSizeFactors</span>(dds, type <span class="nm">=</span> <span class="st">"poscounts"</span>)  <span class="cm"># sparse-data safe</span>
+dds <span class="nm">&lt;-</span> <span class="fn">DESeq</span>(dds)
+
+<span class="cm">## Extract Tumour vs NAT contrast with LFC shrinkage</span>
+res_shrunk <span class="nm">&lt;-</span> <span class="fn">lfcShrink</span>(dds, coef <span class="nm">=</span> <span class="st">"Group_Tumor_vs_NAT"</span>, type <span class="nm">=</span> <span class="st">"apeglm"</span>)
+
+res_deseq <span class="nm">&lt;-</span> <span class="fn">as.data.frame</span>(res_shrunk) <span class="nm">%&gt;%</span>
+  <span class="fn">mutate</span>(
+    significant <span class="nm">=</span> <span class="nm">!</span><span class="fn">is.na</span>(padj) <span class="nm">&amp;</span> padj <span class="nm">&lt;</span> alpha,
+    direction   <span class="nm">=</span> <span class="fn">case_when</span>(
+      <span class="nm">!</span>significant        <span class="nm">~</span> <span class="st">"ns"</span>,
+      log2FoldChange <span class="nm">&gt;</span> <span class="nm">0</span>  <span class="nm">~</span> <span class="st">"Tumor_enriched"</span>,
+      log2FoldChange <span class="nm">&lt;</span> <span class="nm">0</span>  <span class="nm">~</span> <span class="st">"NAT_enriched"</span>
+    )
+  )</pre>
+  </div>
+
+  <h3>ALDEx2</h3>
+  <div class="code-block">
+    <div class="code-header"><span class="code-label">R</span><span class="code-note">paired.test = TRUE, mc.samples = 128</span></div>
+<pre><span class="cm">## Samples ordered NAT then Tumour per patient for paired test</span>
+meta_ord     <span class="nm">&lt;-</span> meta_paired <span class="nm">%&gt;%</span> <span class="fn">arrange</span>(Patient_ID, Group)
+counts_aldex <span class="nm">&lt;-</span> counts_filt[, meta_ord[["Sample_ID"]], drop <span class="nm">=</span> FALSE]
+conds        <span class="nm">&lt;-</span> <span class="fn">as.character</span>(meta_ord[["Group"]])
+
+<span class="fn">set.seed</span>(<span class="nm">123</span>)
+x_clr <span class="nm">&lt;-</span> <span class="fn">aldex.clr</span>(counts_aldex, conds, mc.samples <span class="nm">=</span> <span class="nm">128</span>, denom <span class="nm">=</span> <span class="st">"all"</span>)
+x_tt  <span class="nm">&lt;-</span> <span class="fn">aldex.ttest</span>(x_clr, paired.test <span class="nm">=</span> TRUE)   <span class="cm"># within-patient pairing</span>
+x_eff <span class="nm">&lt;-</span> <span class="fn">aldex.effect</span>(x_clr)
+
+res_aldex <span class="nm">&lt;-</span> <span class="fn">data.frame</span>(taxon <span class="nm">=</span> <span class="fn">rownames</span>(x_tt), x_tt, x_eff) <span class="nm">%&gt;%</span>
+  <span class="fn">mutate</span>(
+    p_min       <span class="nm">=</span> <span class="fn">pmin</span>(we.eBH, wi.eBH, na.rm <span class="nm">=</span> TRUE),
+    significant <span class="nm">=</span> p_min <span class="nm">&lt;</span> alpha,
+    direction   <span class="nm">=</span> <span class="fn">case_when</span>(
+      <span class="nm">!</span>significant <span class="nm">~</span> <span class="st">"ns"</span>,
+      diff.btw <span class="nm">&gt;</span> <span class="nm">0</span> <span class="nm">~</span> <span class="st">"Tumor_enriched"</span>,
+      diff.btw <span class="nm">&lt;</span> <span class="nm">0</span> <span class="nm">~</span> <span class="st">"NAT_enriched"</span>
+    )
+  )</pre>
+  </div>
+
+  <h3>ANCOM-BC2</h3>
+  <div class="code-block">
+    <div class="code-header"><span class="code-label">R</span><span class="code-note">rand_formula = "(1 | Patient_ID)", pseudo_sens = TRUE</span></div>
+<pre><span class="fn">set.seed</span>(<span class="nm">123</span>)
+out_ancom <span class="nm">&lt;-</span> <span class="fn">ancombc2</span>(
+  data          <span class="nm">=</span> counts_filt,
+  taxa_are_rows <span class="nm">=</span> TRUE,
+  meta_data     <span class="nm">=</span> meta_paired,
+  fix_formula   <span class="nm">=</span> <span class="st">"Group"</span>,
+  rand_formula  <span class="nm">=</span> <span class="st">"(1 | Patient_ID)"</span>,    <span class="cm"># random intercept for pairing</span>
+  p_adj_method  <span class="nm">=</span> <span class="st">"BH"</span>,
+  pseudo_sens   <span class="nm">=</span> TRUE,                   <span class="cm"># enables robust sensitivity flag</span>
+  prv_cut <span class="nm">=</span> <span class="nm">0</span>, lib_cut <span class="nm">=</span> <span class="nm">0</span>,             <span class="cm"># no internal filters</span>
+  alpha <span class="nm">=</span> alpha
+)
+
+res_ancom_tbl <span class="nm">&lt;-</span> out_ancom<span class="nm">$</span>res <span class="nm">%&gt;%</span>
+  <span class="fn">mutate</span>(
+    significant        <span class="nm">=</span> <span class="nm">!</span><span class="fn">is.na</span>(q_GroupTumor) <span class="nm">&amp;</span> q_GroupTumor <span class="nm">&lt;</span> alpha,
+    significant_robust <span class="nm">=</span> diff_robust_GroupTumor   <span class="cm"># sensitivity analysis flag</span>
+  )</pre>
+  </div>
+
+  <h3>MaAsLin2</h3>
+  <div class="code-block">
+    <div class="code-header"><span class="code-label">R</span><span class="code-note">random_effects = Patient_ID, normalization = TSS</span></div>
+<pre>fit_maaslin <span class="nm">&lt;-</span> <span class="fn">Maaslin2</span>(
+  input_data      <span class="nm">=</span> counts_filt,
+  input_metadata  <span class="nm">=</span> meta_paired,
+  output          <span class="nm">=</span> <span class="st">"maaslin2_output"</span>,
+  fixed_effects   <span class="nm">=</span> <span class="st">"Group"</span>,          <span class="cm"># NAT vs Tumour</span>
+  random_effects  <span class="nm">=</span> <span class="st">"Patient_ID"</span>,     <span class="cm"># random intercept per patient</span>
+  normalization   <span class="nm">=</span> <span class="st">"TSS"</span>,
+  transform       <span class="nm">=</span> <span class="st">"LOG"</span>,
+  analysis_method <span class="nm">=</span> <span class="st">"LM"</span>,
+  correction      <span class="nm">=</span> <span class="st">"BH"</span>,
+  min_prevalence  <span class="nm">=</span> <span class="nm">0</span>               <span class="cm"># no internal filter</span>
+)
+
+res_maaslin <span class="nm">&lt;-</span> <span class="fn">read_tsv</span>(<span class="st">"maaslin2_output/all_results.tsv"</span>) <span class="nm">%&gt;%</span>
+  <span class="fn">filter</span>(metadata <span class="nm">==</span> <span class="st">"Group"</span>) <span class="nm">%&gt;%</span>
+  <span class="fn">mutate</span>(
+    significant <span class="nm">=</span> <span class="nm">!</span><span class="fn">is.na</span>(qval) <span class="nm">&amp;</span> qval <span class="nm">&lt;</span> alpha,
+    direction   <span class="nm">=</span> <span class="fn">case_when</span>(
+      <span class="nm">!</span>significant <span class="nm">~</span> <span class="st">"ns"</span>,
+      coef <span class="nm">&gt;</span> <span class="nm">0</span>     <span class="nm">~</span> <span class="st">"Tumor_enriched"</span>,
+      coef <span class="nm">&lt;</span> <span class="nm">0</span>     <span class="nm">~</span> <span class="st">"NAT_enriched"</span>
+    )
+  )</pre>
+  </div>
+
+  <!-- 4. RESULTS -->
+  <h2 id="results">4 &nbsp;Results</h2>
+
+  <p>
+    Results show genera significant in <strong>more than one tool</strong> across any data condition, meeting the
+    multi-tool consensus threshold. Single-tool findings (predominantly DESeq2) are described in the Discussion.
+    DESeq2 identified up to 71 significant genera (lung, raw 5% filter) while ALDEx2 and ANCOM-BC2 found zero
+    in the same condition, consistent with Nearing et al. (2022).
+  </p>
+
+  <h3>Breast cancer</h3>
+  <div class="cancer-section">
+    <div class="cancer-header">Breast <span class="cancer-n">n = 308 &nbsp;|&nbsp; 154 paired patients</span></div>
+    <table class="results-table">
+      <thead><tr><th>Genus</th><th>Direction</th><th>DESeq2</th><th>ALDEx2</th><th>MaAsLin2</th><th>ANCOM-BC2</th><th>Conditions</th></tr></thead>
+      <tbody>
+        <tr><td class="genus-bold">Staphylococcus</td><td><span class="dir-tumor">Tumor-enriched</span></td><td><span class="chk">✓</span></td><td><span class="chk">✓</span></td><td><span class="chk">✓</span></td><td><span class="dsh">·</span></td><td>Raw, mbImpute, BMDD; 5% &amp; 10%</td></tr>
+        <tr><td><em>Prevotella</em></td><td><span class="dir-tumor">Tumor-enriched</span></td><td><span class="dsh">·</span></td><td><span class="chk">✓</span></td><td><span class="chk">✓</span></td><td><span class="dsh">·</span></td><td>BMDD &amp; mbImpute; 5% &amp; 10%</td></tr>
+        <tr><td><em>Afipia</em></td><td><span class="dir-nat">NAT-enriched</span></td><td><span class="chk">✓</span></td><td><span class="dsh">·</span></td><td><span class="chk">✓</span></td><td><span class="dsh">·</span></td><td>Raw, mbImpute; 5% &amp; 10%</td></tr>
+        <tr><td><em>Kocuria</em></td><td><span class="dir-nat">NAT-enriched</span></td><td><span class="chk">✓</span></td><td><span class="dsh">·</span></td><td><span class="chk">✓</span></td><td><span class="dsh">·</span></td><td>Raw, mbImpute; multiple filters</td></tr>
+        <tr><td><em>Sphaerobacter</em></td><td><span class="dir-nat">NAT-enriched</span></td><td><span class="chk">✓</span></td><td><span class="dsh">·</span></td><td><span class="chk">✓</span></td><td><span class="dsh">·</span></td><td>Raw, mbImpute; multiple filters</td></tr>
+        <tr><td><em>Aureimonas</em></td><td><span class="dir-nat">NAT-enriched</span></td><td><span class="chk">✓</span></td><td><span class="dsh">·</span></td><td><span class="chk">✓</span></td><td><span class="dsh">·</span></td><td>mbImpute; 5% &amp; 10%</td></tr>
+        <tr><td><em>Actinobacillus</em></td><td><span class="dir-nat">NAT-enriched</span></td><td><span class="chk">✓</span></td><td><span class="dsh">·</span></td><td><span class="chk">✓</span></td><td><span class="dsh">·</span></td><td>mbImpute; 5% &amp; 10%</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Lung cancer</h3>
+  <div class="cancer-section">
+    <div class="cancer-header">Lung <span class="cancer-n">n = 456 &nbsp;|&nbsp; 228 paired patients</span></div>
+    <table class="results-table">
+      <thead><tr><th>Genus</th><th>Direction</th><th>DESeq2</th><th>ALDEx2</th><th>MaAsLin2</th><th>ANCOM-BC2</th><th>Conditions</th></tr></thead>
+      <tbody>
+        <tr><td class="genus-bold">Bacillus</td><td><span class="dir-nat">NAT-enriched</span></td><td><span class="chk">✓</span></td><td><span class="dsh">·</span></td><td><span class="chk">✓</span></td><td><span class="dsh">·</span></td><td>Raw 10%; mbImpute 5% &amp; 10%</td></tr>
+        <tr><td><em>Devosia</em></td><td><span class="dir-nat">NAT-enriched</span></td><td><span class="chk">✓</span></td><td><span class="dsh">·</span></td><td><span class="chk">✓</span></td><td><span class="dsh">·</span></td><td>Raw 10%; mbImpute 5% &amp; 10%</td></tr>
+        <tr><td><em>Friedmanniella</em></td><td><span class="dir-tumor">Tumor-enriched</span></td><td><span class="dsh">·</span></td><td><span class="chk">✓</span></td><td><span class="chk">✓</span></td><td><span class="dsh">·</span></td><td>BMDD 5% only (imputation-dependent)</td></tr>
+        <tr><td><em>Actinobacillus</em></td><td><span class="dir-tumor">Tumor-enriched</span></td><td><span class="chk">✓</span></td><td><span class="dsh">·</span></td><td><span class="chk">✓</span></td><td><span class="dsh">·</span></td><td>mbImpute 5% &amp; 10%</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Ovarian cancer</h3>
+  <div class="cancer-section">
+    <div class="cancer-header">Ovary <span class="cancer-n">n = 24 &nbsp;|&nbsp; 12 paired patients &nbsp;|&nbsp; severely underpowered</span></div>
+    <table class="results-table">
+      <thead><tr><th>Genus</th><th>Direction</th><th>DESeq2</th><th>ALDEx2</th><th>MaAsLin2</th><th>ANCOM-BC2</th><th>Note</th></tr></thead>
+      <tbody>
+        <tr><td class="genus-bold">Staphylococcus</td><td><span class="dir-tumor">Tumor-enriched</span></td><td><span class="chk">✓</span></td><td><span class="dsh">·</span></td><td><span class="dsh">·</span></td><td><span class="chk">✓</span></td><td>Raw + mbImpute; prevalence essentially flat in Nejman Table S7</td></tr>
+        <tr><td><em>Escherichia / Shigella</em></td><td><span class="dir-tumor">Tumor-enriched</span></td><td><span class="chk">✓</span></td><td><span class="dsh">·</span></td><td><span class="dsh">·</span></td><td><span class="chk">✓</span></td><td>Not supported by Nejman prevalence data; directional inconsistency across conditions</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Genera identified by more than one tool</h3>
+  <table class="consensus-table">
+    <thead><tr><th>Genus</th><th>Cancer type</th><th>Direction</th><th>Tools</th></tr></thead>
+    <tbody>
+      <tr><td class="genus-bold">Staphylococcus</td><td>Breast</td><td><span class="dir-tumor">Tumor-enriched</span></td><td class="tools-cell">DESeq2, ALDEx2, MaAsLin2</td></tr>
+      <tr><td><em>Prevotella</em></td><td>Breast</td><td><span class="dir-tumor">Tumor-enriched</span></td><td class="tools-cell">ALDEx2, MaAsLin2</td></tr>
+      <tr><td><em>Afipia</em></td><td>Breast</td><td><span class="dir-nat">NAT-enriched</span></td><td class="tools-cell">DESeq2, MaAsLin2</td></tr>
+      <tr><td><em>Kocuria</em></td><td>Breast</td><td><span class="dir-nat">NAT-enriched</span></td><td class="tools-cell">DESeq2, MaAsLin2</td></tr>
+      <tr><td><em>Sphaerobacter</em></td><td>Breast</td><td><span class="dir-nat">NAT-enriched</span></td><td class="tools-cell">DESeq2, MaAsLin2</td></tr>
+      <tr><td class="genus-bold">Bacillus</td><td>Lung</td><td><span class="dir-nat">NAT-enriched</span></td><td class="tools-cell">DESeq2, MaAsLin2</td></tr>
+      <tr><td><em>Devosia</em></td><td>Lung</td><td><span class="dir-nat">NAT-enriched</span></td><td class="tools-cell">DESeq2, MaAsLin2</td></tr>
+      <tr><td><em>Friedmanniella</em></td><td>Lung</td><td><span class="dir-tumor">Tumor-enriched</span></td><td class="tools-cell">ALDEx2, MaAsLin2</td></tr>
+      <tr><td class="genus-bold">Staphylococcus</td><td>Ovary</td><td><span class="dir-tumor">Tumor-enriched</span></td><td class="tools-cell">DESeq2, ANCOM-BC2</td></tr>
+      <tr><td><em>Escherichia / Shigella</em></td><td>Ovary</td><td><span class="dir-tumor">Tumor-enriched</span></td><td class="tools-cell">DESeq2, ANCOM-BC2</td></tr>
+    </tbody>
+  </table>
+
+  <!-- 5. DISCUSSION -->
+  <h2 id="discussion">5 &nbsp;Discussion</h2>
+
+  <h3>Staphylococcus in breast: most robust finding</h3>
+  <p>
+    <em>Staphylococcus</em> tumour enrichment in breast is the most reliable result of this analysis. It is
+    significant across all three tools that detected it (DESeq2, ALDEx2, MaAsLin2), across all data conditions
+    (raw, mbImpute, BMDD), and at both prevalence thresholds. ALDEx2, the most conservative tool, identified
+    very few genera overall, making its consistent detection of <em>Staphylococcus</em> particularly meaningful.
+  </p>
+  <p>
+    This corroborates Nejman et al. (Table S7), which showed an 11.4% prevalence enrichment of the genus in
+    breast tumours (binomial FDR &lt; 0.0001) using an independent prevalence-based test. At the species level,
+    the signal is driven primarily by <em>S. haemolyticus</em> (+8.8%, binomial FDR ≈ 0) with a secondary
+    contribution from <em>S. pasteuri</em>; <em>S. aureus</em> is essentially flat. Independent corroboration
+    exists in Urbaniak et al. (2016) and Hieken et al. (2016), both of which reported <em>Staphylococcus</em>
+    enrichment in breast tumour tissue from separate cohorts.
+  </p>
+
+  <h3>Tool sensitivity: confirming Nearing et al. (2022)</h3>
+  <p>
+    The disparity in sensitivity between tools directly reproduces the central finding of Nearing et al., who
+    found average inter-tool overlap as low as 20–30% across 38 datasets. DESeq2 finding 51 significant genera
+    versus ALDEx2 finding 1 in the same condition (breast, raw 5% filter) is a stark illustration. This
+    disparity is likely amplified here by the pre-normalised input, as DESeq2's internal normalisation
+    operates on values that have already been normalised. The practical implication is that single-tool analyses
+    of microbiome data can be highly misleading; multi-tool consensus is necessary to distinguish robust from
+    fragile findings.
+  </p>
+
+  <h3>ANCOM-BC2: standard significant, robust not significant</h3>
+  <p>
+    Across all cancer types and conditions, ANCOM-BC2 findings were significant under the standard test
+    (<code>diff = TRUE</code>) but not the robust test (<code>diff_robust = FALSE</code>). This pattern
+    reflects sensitivity to the reference frame assumption, that most taxa are unchanged between conditions, which ANCOM-BC2 uses for bias correction. In tumour microbiome data where the entire microbial community
+    may shift, this assumption is commonly violated. The result is an informative property of the data, not a
+    methodological failure.
+  </p>
+
+  <h3>Effect of imputation</h3>
+  <p>
+    <em>Friedmanniella</em> in lung emerged as significant (ALDEx2 + MaAsLin2) only after BMDD imputation,
+    not in any raw data condition. Cross-referencing Nejman Table S7 shows that <em>Friedmanniella</em> does
+    have a lung prevalence signal (binomial FDR = 0.017, +5.4% tumour enrichment), suggesting BMDD recovered
+    a genuine signal masked by sampling zeros. Findings unique to imputed data should generally be treated as
+    hypothesis-generating, but this case has supporting prevalence evidence from the original study.
+  </p>
+
+  <h3>Ovary: underpowered</h3>
+  <p>
+    With only 24 samples (12 paired patients), the ovary dataset is substantially below the recommended
+    minimum for reliable DA analysis. ALDEx2 and MaAsLin2 found zero significant genera in all conditions.
+    The <em>Escherichia / Shigella</em> tumour enrichment called by DESeq2 and ANCOM-BC2 is not supported by
+    Nejman's prevalence data (0.4% effect size, p = 0.93) and is likely a false positive driven by the small
+    sample size. BMDD could not be applied to the ovary data due to insufficient sample size for stable
+    Bayesian estimation.
+  </p>
+
+  <h3>Limitations</h3>
+  <p>
+    <strong>Pre-normalised input.</strong> SMURF-normalised counts were rounded to integers, violating the
+    raw-count assumptions of DESeq2 and MaAsLin2. Compositionally-aware methods (ALDEx2, ANCOM-BC2) are more
+    appropriate for this data type. <strong>Genus-level resolution.</strong> Aggregating to genus level is
+    standard for low-biomass 16S data but loses species-level specificity. For example,
+    <em>S. haemolyticus</em> rather than <em>S. aureus</em> is the primary driver of the breast signal.
+    <strong>Sample size.</strong> The ovary cohort is severely underpowered, so the ovary-specific findings should not be treated as
+    reliable. <strong>Low biomass.</strong> Tumour microbiome studies are susceptible to contamination; Nejman
+    et al. implemented extensive controls, but this caveat applies to all downstream analyses.
+  </p>
+
+  <h3>References</h3>
+  <div class="references">
+    <p>Nejman D, et al. The human tumor microbiome is composed of tumor type-specific intracellular bacteria. <em>Science.</em> 2020;368(6494):973–980. <a href="https://doi.org/10.1126/science.aay9189" target="_blank">doi:10.1126/science.aay9189</a></p>
+    <p>Nearing JT, et al. Microbiome differential abundance methods produce different results across 38 datasets. <em>Nature Communications.</em> 2022;13:342. <a href="https://doi.org/10.1038/s41467-022-28034-z" target="_blank">doi:10.1038/s41467-022-28034-z</a></p>
+    <p>Lin H, Peddada SD. Analysis of compositions of microbiomes with bias correction. <em>Nature Communications.</em> 2020;11:3514.</p>
+    <p>Fernandes AD, et al. Unifying the analysis of high-throughput sequencing datasets. <em>Microbiome.</em> 2014;2:15.</p>
+    <p>Mallick H, et al. Multivariable association discovery in population-scale meta-omics studies. <em>PLOS Computational Biology.</em> 2021;17(11):e1009442.</p>
+    <p>Jiang R, Li WV, Li JJ. mbImpute: an accurate and robust imputation method for microbiome data. <em>Genome Biology.</em> 2021;22:192.</p>
+    <p>Urbaniak C, et al. The microbiota of breast tissue and its association with breast cancer. <em>Applied and Environmental Microbiology.</em> 2016;82(16):5039–5048.</p>
+  </div>
+
+</main>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="toc-label">On this page</div>
+  <ul class="toc-list">
+    <li><a href="#data">1 &nbsp;Data</a></li>
+    <li><a href="#methods">2 &nbsp;Methods</a></li>
+    <li><a href="#code">3 &nbsp;Code</a></li>
+    <li><a href="#results">4 &nbsp;Results</a></li>
+    <li><a href="#discussion">5 &nbsp;Discussion</a></li>
+  </ul>
+</aside>
+
+</div><!-- /page -->
+
+<footer>
+  Differential Abundance Analysis | Human Tumor Microbiome | 2025 |
+  Data: <a href="https://doi.org/10.1126/science.aay9189" target="_blank">Nejman et al., Science 2020</a> ·
+  <a href="https://github.com/Sanyukta2002/Differential-Abundance-Analysis" target="_blank">GitHub Repository</a>
+</footer>
+
+</body>
+</html>
