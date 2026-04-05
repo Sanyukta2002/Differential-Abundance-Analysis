@@ -2,7 +2,6 @@
 
 <img width="1585" height="499" alt="Screenshot 2026-03-22 174510" src="https://github.com/user-attachments/assets/f24df927-3d1e-4104-8f09-1f08b775e7db" />
 
-# Differential Abundance Analysis of the Human Tumor Microbiome
 
 Benchmarking of four DA tools (DESeq2, ANCOM-BC2, ALDEx2, MaAsLin2) applied to 
 SMURF-normalized 16S abundance data from Nejman et al. (*Science*, 2020) (https://doi.org/10.1126/science.aay9189), comparing 
