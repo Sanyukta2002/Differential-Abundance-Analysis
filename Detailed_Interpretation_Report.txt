@@ -1,6 +1,5 @@
 ================================================================================
-       DETAILED INTERPRETATION REPORT: DIFFERENTIAL ABUNDANCE AND
-       MACHINE LEARNING CLASSIFICATION OF THE HUMAN TUMOR MICROBIOME
+       DETAILED INTERPRETATION REPORT: DIFFERENTIAL ABUNDANCE 
 ================================================================================
 
 Authors' Capstone Study, 2025
@@ -46,13 +45,7 @@ PHASE 1: Differential Abundance Analysis
     (b) mbImpute-imputed data with 5% and 10% filtering
     (c) BMDD-imputed data with 5% and 10% filtering
 
-PHASE 2: Machine Learning Classification
-  - Balanced Random Forest and XGBoost classifiers
-  - Tumor type classification across five cancer types (breast, lung,
-    melanoma, ovary, pancreas)
-  - Stratified 5-fold cross-validation
-  - SMOTE (Synthetic Minority Over-sampling Technique) for class imbalance
-  - 901 total tumor samples for classification
+
 
 ================================================================================
 2. METHODOLOGY: TOOLS AND APPROACHES
@@ -495,8 +488,7 @@ genera they do identify.
     of Staphylococcus across tumor types, and with Urbaniak et al.
     (2016) for breast specifically.
 
-  - Pseudomonas: Present at high abundance in ovary data; one of the
-    top features in classification models. Its role requires careful
+  - Pseudomonas: Present at high abundance in ovary data;. Its role requires careful
     interpretation given contamination concerns.
 
 3.4.3 Effect of Sample Size:
@@ -558,8 +550,7 @@ rather than confirmatory.
 
 5.3.1 Sample Size Disparities:
 The ovary dataset (n=24) is too small for reliable statistical inference.
-Both the DA analysis and machine learning classification suffered from
-this limitation. Future studies should prioritize larger ovarian tumor
+the DA analysis  suffered from this limitation. Future studies should prioritize larger ovarian tumor
 cohorts.
 
 5.3.2 Contamination Concerns:
@@ -601,9 +592,9 @@ The findings of this study are broadly consistent with the existing
 tumor microbiome literature:
 
   - Nejman et al. (2020) reported tumor type-specific microbiomes,
-    which our classification results support (accuracy above chance).
+    which our  results support .
   - The breast tumor microbiome being the most distinctive and diverse
-    (most DA findings, best classification) aligns with Nejman et al.
+    (most DA findings,  aligns with Nejman et al.
     and subsequent studies.
   - Staphylococcus enrichment in breast tumors is supported by
     Urbaniak et al. (2016), Hieken et al. (2016), and Thompson et al.
@@ -617,8 +608,7 @@ tumor microbiome literature:
 ================================================================================
 
 This study provides a systematic evaluation of differential abundance
-analysis tools, imputation methods, and machine learning classifiers
-applied to the human tumor microbiome. The key conclusions are:
+analysis tools, imputation methods, applied to the human tumor microbiome. The key conclusions are:
 
 1. Staphylococcus is robustly identified as tumor-enriched in breast
    tissue across all four DA tools and both imputation methods. This is
@@ -632,8 +622,7 @@ applied to the human tumor microbiome. The key conclusions are:
    revealing signal, sometimes producing no change, and potentially
    introducing artifacts. Findings unique to imputed data should be
    treated as hypothesis-generating.
-4. Ovary data (n=24) is severely underpowered for both DA analysis and
-   machine learning classification, yielding unreliable results.
+4. Ovary data (n=24) is severely underpowered for DA analysis  yielding unreliable results.
 
 
 ================================================================================
@@ -696,9 +685,6 @@ applied to the human tumor microbiome. The key conclusions are:
 15. Jiang R, Li WV, Li JJ. mbImpute: an accurate and robust imputation
     method for microbiome data. Genome Biology. 2021;22:192.
 
-16. Chawla NV, Bowyer KW, Hall LO, Kegelmeyer WP. SMOTE: Synthetic
-    Minority Over-sampling Technique. Journal of Artificial Intelligence
-    Research. 2002;16:321-357.
 
 17. Callahan BJ, McMurdie PJ, Rosen MJ, et al. DADA2: High-resolution
     sample inference from Illumina amplicon data. Nature Methods.
