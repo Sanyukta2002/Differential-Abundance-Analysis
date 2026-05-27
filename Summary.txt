@@ -1,4 +1,4 @@
-The Experiment includes two main phases. The first one is for Differential Abundance analysis of Microbial Data using two imputation method along with 5% and 10% filtering :
+ Differential Abundance analysis of Microbial Data using two imputation method along with 5% and 10% filtering :
 a) https://github.com/zhouhj1994/BMDD
 b)https://github.com/ruochenj/mbImpute
 
