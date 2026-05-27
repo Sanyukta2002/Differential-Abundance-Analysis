@@ -2,7 +2,7 @@ The Experiment includes two main phases. The first one is for Differential Abund
 a) https://github.com/zhouhj1994/BMDD
 b)https://github.com/ruochenj/mbImpute
 
-The second Phase was using Random Forest and XGB boost classifier to classify the Tumor type based on the different cancers along with using SMOTE analysis for imbalanced class like (Ovary) with small database.
+
 
 In the first phase , we used 4 DA tools -Deseq2 , ANCOMBC2, ALDEX2 and Maaslin2. Along with DA tools we used a 5 and 10% filtering to filter out rare taxon. The analysis with 4 DA tools were done with three main analysis:
 Raw data with 5 and 10% filtering
